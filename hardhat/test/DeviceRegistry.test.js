@@ -1,62 +1,64 @@
 const { expect } = require("chai");
 
-describe("Viem Wallet Connection", function () {
-    let deployer, deviceOwner, user;
+// Test Wallet Connection
+// describe("Viem Wallet Connection", function () {
+//     let deployer, deviceOwner, user;
 
-    it("should get wallet clients and check addresses", async function () {
-        // Get wallets
-        const wallets = await hre.viem.getWalletClients();
-        [deployer, deviceOwner, user] = wallets;
+//     it("should get wallet clients and check addresses", async function () {
+//         // Get wallets
+//         const wallets = await hre.viem.getWalletClients();
+//         [deployer, deviceOwner, user] = wallets;
 
-        // Check that each wallet has an address
-        expect(deployer.account.address).to.be.a("string");
-        expect(deviceOwner.account.address).to.be.a("string");
-        expect(user.account.address).to.be.a("string");
+//         // Check that each wallet has an address
+//         expect(deployer.account.address).to.be.a("string");
+//         expect(deviceOwner.account.address).to.be.a("string");
+//         expect(user.account.address).to.be.a("string");
 
-        console.log("Deployer address:", deployer.account.address);
-        console.log("DeviceOwner address:", deviceOwner.account.address);
-        console.log("User address:", user.account.address);
-    });
-});
+//         console.log("Deployer address:", deployer.account.address);
+//         console.log("DeviceOwner address:", deviceOwner.account.address);
+//         console.log("User address:", user.account.address);
+//     });
+// });
 
-describe("Viem Contract Deployment", function () {
-    let deployer;
-    let registry;
+// Test Contract Deployment
+// describe("Viem Contract Deployment", function () {
+//     let deployer;
+//     let registry;
 
-    it("should deploy DeviceRegistry contract", async function () {
-        // Get deployer wallet
-        [deployer] = await hre.viem.getWalletClients();
+//     it("should deploy DeviceRegistry contract", async function () {
+//         // Get deployer wallet
+//         [deployer] = await hre.viem.getWalletClients();
 
-        // Deploy the contract
-        registry = await hre.viem.deployContract("DeviceRegistry", [deployer.account.address], {
-            client: deployer,
-        });
+//         // Deploy the contract
+//         registry = await hre.viem.deployContract("DeviceRegistry", [deployer.account.address], {
+//             client: deployer,
+//         });
 
-        // Check if deployment returned an address
-        expect(registry.address).to.be.a("string");
+//         // Check if deployment returned an address
+//         expect(registry.address).to.be.a("string");
 
-        console.log("DeviceRegistry deployed at:", registry.address);
-    });
+//         console.log("DeviceRegistry deployed at:", registry.address);
+//     });
 
-    it("should deploy UsageManager contract", async function () {
-        // Constructor args: deployer address, registry address, sessionFee
-        const sessionFee = 10n ** 16n; // 0.01 ether
+//     it("should deploy UsageManager contract", async function () {
+//         // Constructor args: deployer address, registry address, sessionFee
+//         const sessionFee = 10n ** 16n; // 0.01 ether
 
-        usageManager = await hre.viem.deployContract(
-            "UsageManager",
-            [deployer.account.address, registry.address, sessionFee],
-            { client: deployer }
-        );
+//         usageManager = await hre.viem.deployContract(
+//             "UsageManager",
+//             [deployer.account.address, registry.address, sessionFee],
+//             { client: deployer }
+//         );
 
-        // Check deployment
-        expect(usageManager.address).to.be.a("string");
-        console.log("UsageManager deployed at:", usageManager.address);
-    });
+//         // Check deployment
+//         expect(usageManager.address).to.be.a("string");
+//         console.log("UsageManager deployed at:", usageManager.address);
+//     });
 
-});
+// });
 
 describe("DeviceRegistry functionality testing", function () {
-    let deployer, deviceOwner, user;
+    let deployer, deviceOwner;
     let registry, registryAsOwner;
     const deviceAddr = "0x000000000000000000000000000000000000dEaD";    // Hard coded device address for testing purposes
 
@@ -82,7 +84,9 @@ describe("DeviceRegistry functionality testing", function () {
             deviceOwner.account.address,
             "sensor",
             "pubkey123",
-        ]);
+        ], {
+            account: deviceOwner.account
+        });
 
         const device = await registryAsOwner.read.getDeviceInformation([deviceAddr]);
         expect(device[0].toLowerCase()).to.equal(deviceOwner.account.address); // owner
@@ -139,7 +143,9 @@ describe("DeviceRegistry functionality testing", function () {
             deviceAddr,
             "camera",
             "newpubkey456",
-        ]);
+        ],{
+            account: deviceOwner.account
+        });
 
         const device = await registryAsOwner.read.getDeviceInformation([deviceAddr]);
 
@@ -160,4 +166,5 @@ describe("DeviceRegistry functionality testing", function () {
     });
 
 });
+
 

@@ -157,7 +157,7 @@ contract UsageManager is Ownable, ReentrancyGuard {
         bool isContractOwner = (msg.sender == owner());
         bool isSessionUser = (msg.sender == s.user);
 
-        require(isDeviceOwner || isContractOwner || isSessionUser, "Not authorized to end session"); // authorization: device owner or contract owner only
+        require(isDeviceOwner || isContractOwner || isSessionUser, "Not authorized to end session");
 
         balances[deviceOwner] += s.fee; // Credit the device owner's (pull pattern)
         s.active = false; // Mark the session as inactive
@@ -175,7 +175,10 @@ contract UsageManager is Ownable, ReentrancyGuard {
      * @dev Allows device owners to withdraw their accumulated earnings.
      * This uses a "pull instead of push" pattern for security. Users "pull" their funds rather than the contract "pushing" them, helps with re-entrancy attacks.
      */
-    function withdraw() external nonReentrant {
+    function withdraw(address _deviceAddress) external nonReentrant {
+
+        require(deviceRegistry.getDeviceOwner(_deviceAddress) == msg.sender, "Not device owner");
+
         uint256 amount = balances[msg.sender]; // Get the caller's balance
         require(amount > 0, "No balance to withdraw"); // Ensure that user has positive balance to withdraw
 

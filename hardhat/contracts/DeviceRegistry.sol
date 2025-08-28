@@ -26,8 +26,8 @@ contract DeviceRegistry is Ownable {
     event DeviceRegistered(address indexed deviceAddress, address indexed owner, string deviceType);    // Event to log when a new device is successfully registered
     event DeviceInfoUpdated(address indexed deviceAddress, string newDeviceType, string newPublicKey);  // An event to log when a device information is updated
     event DeviceStatusUpdated(address indexed deviceAddress, bool newStatus);   // An event to log when a device's status is updated
-    event DeviceHeartbeat(address indexed deviceAddress, uint256 timestamp); // An event to log when a device sends a heartbeat signal
     event DeviceRemoved(address indexed deviceAddress);  // An event to log when a device is removed
+    event DeviceHeartbeat(address indexed deviceAddress, uint256 timestamp); // An event to log when a device sends a heartbeat signal
 
     /**
      * @dev The constructor sets the inital owner of the contract.
@@ -63,7 +63,7 @@ contract DeviceRegistry is Ownable {
         string calldata _publicKey
     ) external {
         require(_deviceAddress != address(0) && _deviceOwner != address(0), "Zero address");    // Ensure valid addresses
-        // require(msg.sender == _deviceOwner, "Sender must be device owner"); // Ensure the sender is the device owner
+        require(msg.sender == _deviceOwner, "Sender must be device owner"); // Ensure the sender is the device owner
         require(devices[_deviceAddress].deviceOwner == address(0), "Already registered");   // Ensure the device is not already registered
 
         // Store new device information
@@ -124,7 +124,7 @@ contract DeviceRegistry is Ownable {
         address _deviceAddress,
         string calldata _newDeviceType,
         string calldata _newPublicKey
-    ) external {
+    ) external onlyDeviceOwner(_deviceAddress) {
         
         Device storage d = devices[_deviceAddress]; // Fetch the device details
         d.deviceType = _newDeviceType;  // Update the device type
@@ -193,6 +193,10 @@ contract DeviceRegistry is Ownable {
             d.lastSeen,
             d.publicKey
         );
+    }
+
+    function verifyDeviceOwner(address _deviceAddress) external view{
+        require(devices[_deviceAddress].deviceOwner == msg.sender, "Not device owner");
     }
 
 }
