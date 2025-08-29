@@ -6,7 +6,7 @@ describe("UsageManager functionality testing", function() {
     let registry, usageManager;
     let registryAsOwner, usageManagerAsUser, usageManagerAsDeviceOwner;
 
-    const sessionFee = 10n**16n;    //0.01ether
+    const deviceFee = 10n**16n;    //0.01ether
     const deviceAddr = "0x000000000000000000000000000000000000dEaD";
 
     before(async function() {
@@ -21,7 +21,7 @@ describe("UsageManager functionality testing", function() {
         // Deploy UsageManager
         usageManager = await hre.viem.deployContract(
             "UsageManager",
-            [deployer.account.address, registry.address, sessionFee],
+            [deployer.account.address, registry.address],
             {client: deployer}
         );
 
@@ -35,6 +35,7 @@ describe("UsageManager functionality testing", function() {
             deviceOwner.account.address,
             "sensor",
             "pubkey123",
+            deviceFee
         ],{
             account: deviceOwner.account
         });
@@ -53,7 +54,7 @@ describe("UsageManager functionality testing", function() {
         const hash = await usageManagerAsUser.write.startSession(
             [deviceAddr],{
             account: user.account,
-            value: sessionFee
+            value: deviceFee
         });
 
         expect(hash).to.be.a("string");
@@ -67,7 +68,7 @@ describe("UsageManager functionality testing", function() {
         expect(session.device.toLowerCase()).to.equal(deviceAddr.toLowerCase());    //device
         expect(session.active).to.equal(true);  // state
 
-        console.log("Session started:", sessionId, " with fee of ", sessionFee.toString());
+        console.log("Session started:", sessionId, " with fee of ", deviceFee.toString());
 
     });
 
@@ -81,7 +82,7 @@ describe("UsageManager functionality testing", function() {
         expect(session.active).to.equal(false);
 
         const balance = await usageManager.read.getBalance([deviceOwner.account.address]);
-        expect(balance).to.equal(sessionFee);
+        expect(balance).to.equal(deviceFee);
 
         console.log("Session ended, balance credited:", balance.toString());
     })
@@ -104,7 +105,8 @@ describe("UsageManager functionality testing", function() {
 
         const newContractBalance = await usageManager.read.getBalance([deviceOwner.account.address]);
         expect(newContractBalance).to.equal(0n);
-
+        console.log("Before balance:", beforeBal.toString());
+        console.log("After balance:", afterBal.toString());
         console.log("Withdrawal successful, owner received funds");
     });
 });

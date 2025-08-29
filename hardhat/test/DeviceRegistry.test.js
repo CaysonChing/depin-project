@@ -61,6 +61,8 @@ describe("DeviceRegistry functionality testing", function () {
     let deployer, deviceOwner;
     let registry, registryAsOwner;
     const deviceAddr = "0x000000000000000000000000000000000000dEaD";    // Hard coded device address for testing purposes
+    const fee = 10n**16n;
+    const newFee = 20n**16n;
 
     before(async function () {
         const wallets = await hre.viem.getWalletClients();
@@ -84,6 +86,7 @@ describe("DeviceRegistry functionality testing", function () {
             deviceOwner.account.address,
             "sensor",
             "pubkey123",
+            fee
         ], {
             account: deviceOwner.account
         });
@@ -93,6 +96,7 @@ describe("DeviceRegistry functionality testing", function () {
         expect(device[1]).to.equal(true);                       // isActive
         expect(device[2]).to.equal("sensor");                   // deviceType
         expect(device[4]).to.equal("pubkey123");                // pubKey
+        expect(device[5]).to.equal(fee);                        // fee
         console.log("Device registered successfully for:", deviceOwner.account.address);
     });
 
@@ -139,10 +143,13 @@ describe("DeviceRegistry functionality testing", function () {
     });
 
     it("should allow deviceOwner to update device info", async function() {
+
+        console.log("Device info before:", await registryAsOwner.read.getDeviceInformation([deviceAddr]));
         await registryAsOwner.write.updateDeviceInfo([
             deviceAddr,
             "camera",
             "newpubkey456",
+            newFee
         ],{
             account: deviceOwner.account
         });
@@ -151,8 +158,9 @@ describe("DeviceRegistry functionality testing", function () {
 
         expect(device[2]).to.equal("camera");
         expect(device[4]).to.equal("newpubkey456");
+        expect(device[5]).to.equal(newFee);
         
-        console.log("Device info updated:", device[2], device[4]);
+        console.log("Device info after:", await registryAsOwner.read.getDeviceInformation([deviceAddr]));
     });
 
     it("should allow owner/deviceOwner to remove the device", async function(){

@@ -14,7 +14,13 @@ import "./DeviceRegistry.sol";
 contract UsageManager is Ownable, ReentrancyGuard {
     DeviceRegistry public deviceRegistry; // Reference to DeviceRegistry contract
     mapping(address => uint256) private balances; // Mapping to store user-specific accumulated balance for withdrawal
-    uint256 public fixedFee; // Fixed fee charged per session
+
+    uint256 public registrationReward;      // Fixed reward for registering device
+
+    // Allow contract owner to configure reward amount
+    function setRegistrationReward(uint256 _reward) external onlyOwner {
+        registrationReward = _reward;
+    }
 
     // Session structure to hold session details
     struct Session {
@@ -54,37 +60,18 @@ contract UsageManager is Ownable, ReentrancyGuard {
      * @dev The constructor sets the inital owner and the address of the Device Registry.
      * @param initialOwner The address that will be the first owner of the contract.
      * @param _deviceRegistryAddress The address of the deployed DeviceRegistry contract.
-     * @param _initialFixedFee The initial fixed fee charged per session.
      */
     constructor(
         address initialOwner,
-        address _deviceRegistryAddress,
-        uint256 _initialFixedFee
-    ) Ownable (msg.sender) {
+        address _deviceRegistryAddress
+    ) Ownable (initialOwner) {
         
         require(_deviceRegistryAddress != address(0), "Invalid DeviceRegistry address");       // Check for valid DeviceRegistry address
-        require(_initialFixedFee > 0, "Fee must be greater than 0");    // Check for valid fee
-
         deviceRegistry = DeviceRegistry(_deviceRegistryAddress); // Initialize the DeviceRegistry reference
-        fixedFee = _initialFixedFee; // Set the initial fixed fee
-
-        // Ownable constructor sets deployer as owner
-        if (initialOwner != address(0) && initialOwner != msg.sender) {
-            transferOwnership(initialOwner);
-        }
+        
     }
 
     // Contract Owner-only configuration functions
-
-    /**
-     * @dev set the fixed fee for a session.
-     * This function is restricted to the contract owner.
-     * @param _newFee the new fee to be set
-     */
-    function setFixedFee(uint256 _newFee) external onlyOwner {
-        require(_newFee > 0, "Fee must be greater than zero"); // Ensure the new fee is valid
-        fixedFee = _newFee; // Update the fixed fee
-    }
 
     function setDeviceRegistry(address _deviceRegistryAddress) external onlyOwner {
         require(_deviceRegistryAddress != address(0), "Invalid address"); // Check for valid address
@@ -102,7 +89,11 @@ contract UsageManager is Ownable, ReentrancyGuard {
      */
     function startSession(address _deviceAddress) external payable nonReentrant returns (bytes32 sessionId) {
         require(deviceRegistry.isDeviceActive(_deviceAddress), "Device is not active or not found"); // Ensure the device exists and is active
-        require(msg.value == fixedFee, "Incorrect fee sent"); // Ensure the user sent the correct fee.
+
+        // Fetch device info
+        uint256 deviceFee = deviceRegistry.getDeviceFee(_deviceAddress);
+
+        require(msg.value == deviceFee, "Incorrect fee sent");
         require(deviceActiveSession[_deviceAddress] == bytes32(0),"Device already has an active session"); // Prevent multiple active sessions for the same device
 
         // Generate a unique session ID based on the user's address and timestamp.
@@ -123,7 +114,7 @@ contract UsageManager is Ownable, ReentrancyGuard {
             user: msg.sender,
             device: _deviceAddress,
             startTime: block.timestamp,
-            fee: fixedFee,
+            fee: deviceFee,
             active: true
         });
 
@@ -135,7 +126,7 @@ contract UsageManager is Ownable, ReentrancyGuard {
             msg.sender,
             _deviceAddress,
             block.timestamp,
-            msg.value
+            deviceFee
         );
     }
 

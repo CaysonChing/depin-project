@@ -13,24 +13,21 @@ async function main() {
     const balance = await publicClient.getBalance({ address: deployer.account.address });
     console.log("Account balance:", balance.toString());
 
-    // DeviceRegistry address (because i accidentally deployed it)
-    const deviceRegistryAddress: `0x${string}` = "0x88269c203704e7936c6ebc5cbca83d47cfbd543b";
+    // Deploy DeviceRegistry contract
+    // Read the compiled contract's artifact to get its bytecode and ABI
+    const deviceRegistryArtifact = await hre.artifacts.readArtifact("DeviceRegistry");
 
-    // // Deploy DeviceRegistry contract
-    // // Read the compiled contract's artifact to get its bytecode and ABI
-    // const deviceRegistryArtifact = await hre.artifacts.readArtifact("DeviceRegistry");
+    // Deploy the contract
+    const deviceRegistryHash = await deployContract(deployer, {
+        abi: deviceRegistryArtifact.abi as any,
+        bytecode: deviceRegistryArtifact.bytecode as `0x${string}`,
+        args: [deployer.account.address],
+    });
 
-    // // Deploy the contract
-    // const deviceRegistryHash = await deployContract(deployer, {
-    //     abi: deviceRegistryArtifact.abi as any,
-    //     bytecode: deviceRegistryArtifact.bytecode as `0x${string}`,
-    //     args: [deployer.account.address],
-    // });
-
-    // // Wait for the deployment transaction to be confirmed 
-    // const deviceRegistryReceipt = await publicClient.waitForTransactionReceipt({ hash: deviceRegistryHash });
-    // const deviceRegistryAddress = deviceRegistryReceipt.contractAddress;
-    // console.log("DeviceRegistry deployed to:", deviceRegistryAddress);
+    // Wait for the deployment transaction to be confirmed 
+    const deviceRegistryReceipt = await publicClient.waitForTransactionReceipt({ hash: deviceRegistryHash });
+    const deviceRegistryAddress = deviceRegistryReceipt.contractAddress;
+    console.log("DeviceRegistry deployed to:", deviceRegistryAddress);
 
     // Deploy UsageManager contract
     // Read UsageManager artifact
