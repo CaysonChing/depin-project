@@ -11,7 +11,6 @@ const IOTA_EVM_TESTNET_RPC_URL = process.env.IOTA_EVM_TESTNET_RPC_URL || "";
 
 const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 
-
 const config: HardhatUserConfig = {
   solidity: "0.8.28",
   networks: {
@@ -28,7 +27,7 @@ const config: HardhatUserConfig = {
   },
   // etherscan: {
   //   apiKey: {
-      // polygonAmoy: POLYGONSCAN_API_KEY,
+  // polygonAmoy: POLYGONSCAN_API_KEY,
   //   },
   // },
 };
