@@ -18,7 +18,8 @@ const config: HardhatUserConfig = {
       url: IOTA_EVM_TESTNET_RPC_URL,
       chainId: 1076,
       accounts: WALLET_PRIVATE_KEY ? [WALLET_PRIVATE_KEY] : [],
-    },
+      confirmations: 1,
+    } as any,
     // amoy: {
     //   url: AMOY_RPC_URL,
     //   accounts: WALLET_PRIVATE_KEY ? [WALLET_PRIVATE_KEY] : [],

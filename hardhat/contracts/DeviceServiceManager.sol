@@ -101,7 +101,7 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
         bytes32 _publicKey, 
         uint256 _fee
     ) external {
-        
+    
         // Confirmation conditions
         require(_deviceAddress != address(0) && _deviceOwner != address(0), "Zero address");
         require(_deviceAddress != _deviceOwner, "Device cannot be owner");
@@ -148,8 +148,8 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
         uint256 _newFee
     ) external onlyDeviceOwner(_deviceAddress){
         
-        require(_newFee > 0, "Fee must be greater than 0");
         require(bytes(_newDeviceType).length > 0 && bytes(_newDeviceType).length <= 64, "Invalid device type length");
+        require(_newFee > 0, "Fee must be greater than 0");
         
         Device storage device = devices[_deviceAddress];
 
@@ -252,6 +252,7 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
     {
         Device storage device = devices[_deviceAddress];
         require(device.deviceOwner != address(0), "Device is not registered");
+
         return(
             device.deviceOwner,
             device.isActive,
@@ -303,7 +304,7 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
         require(device.deviceOwner != address(0), "Device is not registered");
         require(device.isActive, "Device is not active");
         require(deviceActiveSession[_deviceAddress] == bytes32(0), "Device already in use");
-        require(msg.value >= device.fee, "Insufficient fee");
+        require(msg.value == device.fee, "Incorrect fee submitted");
 
         // Refund excess payment
         uint256 excess = msg.value - device.fee;
@@ -391,6 +392,9 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
     }
 
     // ========== View Functions (Session & Usage) ==========
+    /**
+     * @dev Get the session information using sessionId
+     */
     function getSession(bytes32 _sessionId)external view returns(
         address user,
         address deviceAddress,
@@ -403,10 +407,16 @@ contract DeviceUsageManager is Ownable, ReentrancyGuard{
         return (session.user, session.deviceAddress, session.startTime, session.endTime, session.fee, session.active);
     }
 
+    /**
+     * @dev Get the list of devices with active session
+     */
     function getActiveSession(address _deviceAddress) external view returns(bytes32){
         return deviceActiveSession[_deviceAddress];
     }
 
+    /**
+     * @dev Get balance the device is holding
+     */
     function getDeviceBalance(address _deviceAddress) external view returns(uint256){
         return deviceBalance[_deviceAddress];
     }
