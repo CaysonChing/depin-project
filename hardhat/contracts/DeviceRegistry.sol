@@ -23,14 +23,17 @@ contract DeviceRegistry is Ownable {
         uint256 fee;
     }
 
-    mapping(address => Device) public devices;      // Mapping to store device data, indexed by device's unique address
+    mapping(address => Device) public devices;                                                                          // Mapping to store device data, indexed by device's unique address
+    address[] private deviceAddresses;                                                                                  // Store all registered devices addresses
+    mapping(address => address[]) private ownerDevices;                                                                 // Map owner to devices
 
 
-    event DeviceRegistered(address indexed deviceAddress, address indexed owner, string deviceType, uint256 fee);    // Event to log when a new device is successfully registered
-    event DeviceInfoUpdated(address indexed deviceAddress, string newDeviceType, string newPublicKey, uint256 fee);  // An event to log when a device information is updated
-    event DeviceStatusUpdated(address indexed deviceAddress, bool newStatus);   // An event to log when a device's status is updated
-    event DeviceRemoved(address indexed deviceAddress);  // An event to log when a device is removed
-    event DeviceHeartbeat(address indexed deviceAddress, uint256 timestamp); // An event to log when a device sends a heartbeat signal
+    // ----- Event -----
+    event DeviceRegistered(address indexed deviceAddress, address indexed owner, string deviceType, uint256 fee);       
+    event DeviceInfoUpdated(address indexed deviceAddress, string newDeviceType, string newPublicKey, uint256 fee);     
+    event DeviceStatusUpdated(address indexed deviceAddress, bool newStatus);                                           
+    event DeviceRemoved(address indexed deviceAddress);                                                                 
+    event DeviceHeartbeat(address indexed deviceAddress, uint256 timestamp);                                            
     
     /**
      * @dev The constructor sets the inital owner of the contract.
@@ -51,6 +54,7 @@ contract DeviceRegistry is Ownable {
         _;
     }
 
+    // ----- Manage Device Functions -----
     /**
      * @dev Registers a new device in the registry.
      * This function can be called by any user
@@ -58,6 +62,7 @@ contract DeviceRegistry is Ownable {
      * @param _deviceOwner The address of the device owner.
      * @param _deviceType A human-readable identifier for the device category (eg. "router", "sensor").
      * @param _publicKey The public key associated with the device.
+     * @param _fee The fee set by device owner to use this device
      */
     function registerDevice(
         address _deviceAddress,
@@ -66,10 +71,10 @@ contract DeviceRegistry is Ownable {
         string calldata _publicKey,
         uint256 _fee
     ) external {
-        require(_deviceAddress != address(0) && _deviceOwner != address(0), "Zero address");    // Ensure valid addresses
-        require(msg.sender == _deviceOwner, "You can only register devices for yourself");     // Ensure the registrar is the device owner
-        require(devices[_deviceAddress].deviceOwner == address(0), "Device is already registered");   // Ensure the device is not already registered
-        require(_fee > 0, "Fee must be greater than 0");
+        require(_deviceAddress != address(0) && _deviceOwner != address(0), "Zero address");            // Ensure valid addresses
+        require(msg.sender == _deviceOwner, "You can only register devices for yourself");              // Ensure the registrar is the device owner
+        require(devices[_deviceAddress].deviceOwner == address(0), "Device is already registered");     // Ensure the device is not already registered
+        require(_fee > 0, "Fee must be greater than 0");                                                // Ensure the fee value is valid
 
         // Store new device information
         devices[_deviceAddress] = Device({
@@ -81,6 +86,9 @@ contract DeviceRegistry is Ownable {
             fee: _fee
         });
 
+        deviceAddresses.push(_deviceAddress);                                                           // Store device address
+        ownerDevices[_deviceOwner].push(_deviceAddress);                                                // Store device address with owner address
+
         // Emit an event to log the registration
         emit DeviceRegistered(_deviceAddress, _deviceOwner, _deviceType, _fee);
     }
@@ -91,6 +99,7 @@ contract DeviceRegistry is Ownable {
      * @param _deviceAddress The address of device to update
      * @param _newDeviceType The new type of device
      * @param _newPublicKey  New public key of the device
+     * @param _newFee  Updated fee for the device
      */
     function updateDeviceInfo(
         address _deviceAddress,
@@ -98,12 +107,14 @@ contract DeviceRegistry is Ownable {
         string calldata _newPublicKey,
         uint256 _newFee
     ) external onlyDeviceOwner(_deviceAddress) {
+
+        require(_newFee > 0, "Fee must be greater than 0");   
         
-        Device storage d = devices[_deviceAddress]; // Fetch the device details
-        d.deviceType = _newDeviceType;  // Update the device type
-        d.publicKey = _newPublicKey;    // Update the public key of the device
-        d.lastSeen = block.timestamp;   // Update the last seen timestamp
-        d.fee = _newFee;
+        Device storage d = devices[_deviceAddress];         // Fetch the device details
+        d.deviceType = _newDeviceType;                      // Update the device type
+        d.publicKey = _newPublicKey;                        // Update the public key of the device
+        d.lastSeen = block.timestamp;                       // Update the last seen timestamp
+        d.fee = _newFee;                                    // Updated fee
         
         // Emit an event to log the update 
         emit DeviceInfoUpdated(_deviceAddress, _newDeviceType, _newPublicKey, _newFee);
@@ -120,14 +131,49 @@ contract DeviceRegistry is Ownable {
         bool _newStatus
     ) external onlyAdminOrDeviceOwner(_deviceAddress) {
 
-        Device storage d = devices[_deviceAddress]; // Fetch the device details
+        Device storage device = devices[_deviceAddress];                    // Fetch the device details
+        require(device.isActive != _newStatus, "No status change");         // Ensure there is a status change
 
-        require(d.isActive != _newStatus, "No status change");  // Ensure there is a status change
-        d.isActive = _newStatus;    // Update the device status
-        d.lastSeen = block.timestamp;   // Update the last seen timestamp
+        device.isActive = _newStatus;                                       // Update the device status
+        device.lastSeen = block.timestamp;                                  // Update the last seen timestamp
 
         // Emit an event to log the status update
         emit DeviceStatusUpdated(_deviceAddress, _newStatus);
+    }
+
+    /**
+     * @dev Delete a device that is out of service or causing issue
+     * This function is restricted to contract owner and device owner
+     * @param _deviceAddress The address of the device to be deleted
+     */
+    function removeDevice(address _deviceAddress) external onlyAdminOrDeviceOwner(_deviceAddress){
+        require(devices[_deviceAddress].deviceOwner != address(0), "Device is not registered");     // Ensure that the device is registered
+
+        address dOwner = devices[_deviceAddress].deviceOwner;
+        
+        delete devices[_deviceAddress];                                                             // Deletes the device
+
+        // Remove from deviceAddresses array
+        for (uint i = 0; i < deviceAddresses.length; i++) {
+            if (deviceAddresses[i] == _deviceAddress) {
+                deviceAddresses[i] = deviceAddresses[deviceAddresses.length - 1];
+                deviceAddresses.pop();
+                break;
+            }
+        }
+
+        // Remove from ownerDevices mapping
+        address[] storage ownedList = ownerDevices[dOwner];
+        for (uint i = 0; i < ownedList.length; i++) {
+            if (ownedList[i] == _deviceAddress) {
+                ownedList[i] = ownedList[ownedList.length - 1];
+                ownedList.pop();
+                break;
+            }
+        }
+
+        // Emit event to log the deletion
+        emit DeviceRemoved(_deviceAddress); 
     }
 
     /**
@@ -137,71 +183,69 @@ contract DeviceRegistry is Ownable {
      */
     function heartbeat(address _deviceAddress) external onlyAdminOrDeviceOwner(_deviceAddress) {
         
-        devices[_deviceAddress].lastSeen = block.timestamp; // Update the last seen timestamp   
+        devices[_deviceAddress].lastSeen = block.timestamp;                 // Update the last seen timestamp   
 
         // Emit an event to log the heartbeat
         emit DeviceHeartbeat(_deviceAddress, block.timestamp);  
     }
 
-    /**
-     * @dev Delete a device that is out of service or causing issue
-     * This function is restricted to contract owner and device owner
-     * @param _deviceAddress The address of the device to be deleted
-     */
-    function removeDevice(address _deviceAddress) external onlyAdminOrDeviceOwner(_deviceAddress){
-        require(devices[_deviceAddress].deviceOwner != address(0), "Device is not registered"); // Ensure that the device is registered
-
-        delete devices[_deviceAddress]; // Deletes the device
-
-        // Emit event to log the deletion
-        emit DeviceRemoved(_deviceAddress); 
-    }
-
+    //----- Get functions -----
     /**
      * @dev Checks if a device is registered in the registry.
-     * @param _deviceAddress The address of the device to check.
-     * @return A boolean indicating if the device is registered.
      */
     function isRegistered(address _deviceAddress) external view returns (bool) {
         return devices[_deviceAddress].deviceOwner != address(0);
     }
 
     /**
-    //  * @dev Gets a device's status
-    //  * @param _deviceAddress The address of the device to query.
-    //  * @return A booleaan indicating if the device is active.
-    //  */
-    function isDeviceActive(address _deviceAddress) external view returns (bool) {
-        return devices[_deviceAddress].isActive;
-    }
-
-    // /**
-    //  * @dev Gets the owner of a device
-    //  * @param _deviceAddress The address to query
-    //  * @return The address of the device's owner
-    //  */
+     * @dev Gets the owner of a device
+     */
     function getDeviceOwner(address _deviceAddress) external view returns (address) {
         return devices[_deviceAddress].deviceOwner;
     }
 
-    function getDeviceFee(address _deviceAddress) external view returns(uint256){
+    /**
+     * @dev Gets the list of devices by owner address
+     */
+    function getDevicesByOwner(address _deviceOwner) external view returns (address[] memory){
+        return ownerDevices[_deviceOwner];
+    }
+
+    /**
+     * @dev Gets a device's status
+     */
+    function isDeviceActive(address _deviceAddress) external view returns (bool) {
+        return devices[_deviceAddress].isActive;
+    }
+
+    /**
+     * @dev Gets the device type
+     */
+    function getDeviceType(address _deviceAddress) external view returns (string memory){
+        return devices[_deviceAddress].deviceType;
+    }
+
+    /**
+     * @dev Gets Fee required to use the device
+     */
+    function getDeviceFee(address _deviceAddress) external view returns (uint256){
         return devices[_deviceAddress].fee;
     }
 
     /**
      * @dev Gets the information of the device
-     * @param _deviceAddress The address of the device
-     * return the device object matching the address
      */
-    function getDeviceInformation(address _deviceAddress) external view 
-    returns (
-        address deviceOwner,
-        bool isActive,
-        string memory deviceType,
-        uint256 lastSeen,
-        string memory publicKey,
-        uint256 fee
-    ) 
+    function getDeviceInformation(address _deviceAddress) 
+        external 
+        view 
+        returns (
+            address deviceOwner,
+            bool isActive,
+            string memory deviceType,
+            uint256 lastSeen,
+            string memory publicKey,
+            uint256 fee
+        ) 
     {
         Device storage d = devices[_deviceAddress];
         return (
@@ -212,6 +256,24 @@ contract DeviceRegistry is Ownable {
             d.publicKey,
             d.fee
         );
+    }
+
+    /**
+     * @dev Returns all registered devices
+     */
+    function getAllDevices() external view returns(Device[] memory){
+        Device[] memory allDevices = new Device[](deviceAddresses.length);
+        for(uint i = 0; i < deviceAddresses.length; i++){
+            allDevices[i] = devices[deviceAddresses[i]];
+        }
+        return allDevices;
+    }
+
+    /**
+     * @dev Returns only registered device address
+     */
+    function getAllDeviceAddresses() external view returns (address[] memory){
+        return deviceAddresses;
     }
 
 }

@@ -13,14 +13,9 @@ import "./DeviceRegistry.sol";
  */
 contract UsageManager is Ownable, ReentrancyGuard {
     DeviceRegistry public deviceRegistry; // Reference to DeviceRegistry contract
-    mapping(address => uint256) private balances; // Mapping to store user-specific accumulated balance for withdrawal
+    mapping(address => uint256) private deviceBalances; // Map device to their own fee pool
 
-    uint256 public registrationReward;      // Fixed reward for registering device
-
-    // Allow contract owner to configure reward amount
-    function setRegistrationReward(uint256 _reward) external onlyOwner {
-        registrationReward = _reward;
-    }
+    uint256 public registrationReward; // Fixed reward for registering device
 
     // Session structure to hold session details
     struct Session {
@@ -36,7 +31,7 @@ contract UsageManager is Ownable, ReentrancyGuard {
 
     uint256 private sessionNonce; // Nonce to ensure unique session IDs
 
-    // Event to log when a session starts
+    // ----- Events -----
     event SessionStarted(
         bytes32 indexed sessionId,
         address indexed user,
@@ -45,7 +40,6 @@ contract UsageManager is Ownable, ReentrancyGuard {
         uint256 fee
     );
 
-    // Event to log when a session ends
     event SessionEnded(
         bytes32 indexed sessionId,
         address indexed deviceOwner,
@@ -53,9 +47,13 @@ contract UsageManager is Ownable, ReentrancyGuard {
         uint256 feePaid
     );
 
-    // Event to log when a device owner withdraws their earnings
-    event Withdrawal(address indexed deviceOwner, uint256 amount);
+    event Withdraw(
+        address indexed device,
+        address indexed deviceOwner,
+        uint256 amount
+    );
 
+    // ----- Constructor -----
     /**
      * @dev The constructor sets the inital owner and the address of the Device Registry.
      * @param initialOwner The address that will be the first owner of the contract.
@@ -64,22 +62,30 @@ contract UsageManager is Ownable, ReentrancyGuard {
     constructor(
         address initialOwner,
         address _deviceRegistryAddress
-    ) Ownable (initialOwner) {
-        
-        require(_deviceRegistryAddress != address(0), "Invalid DeviceRegistry address");       // Check for valid DeviceRegistry address
+    ) Ownable(initialOwner) {
+        // Check for valid DeviceRegistry address
+        require(
+            _deviceRegistryAddress != address(0),
+            "Invalid DeviceRegistry address"
+        );
         deviceRegistry = DeviceRegistry(_deviceRegistryAddress); // Initialize the DeviceRegistry reference
-        
     }
 
-    // Contract Owner-only configuration functions
+    // ----- Contract Owner Functions -----
 
-    function setDeviceRegistry(address _deviceRegistryAddress) external onlyOwner {
+    function setRegistrationReward(uint256 _reward) external onlyOwner {
+        require(_reward > 0, "Reward must be greater than 0"); // Check for valid reward amount
+        registrationReward = _reward;
+    }
+
+    function setDeviceRegistry(
+        address _deviceRegistryAddress
+    ) external onlyOwner {
         require(_deviceRegistryAddress != address(0), "Invalid address"); // Check for valid address
         deviceRegistry = DeviceRegistry(_deviceRegistryAddress); // Update the DeviceRegistry reference
     }
 
-    // Session lifecycle functions
-
+    // ----- Session lifecycle functions -----
     /**
      * @dev Starts a new usage session. The user sends the fixed fee with this transaction.
      * The payment is secured and held by the contract.
@@ -87,14 +93,23 @@ contract UsageManager is Ownable, ReentrancyGuard {
      * @param _deviceAddress The address of the device being used.
      * @return sessionId Unique session ID for tracking.
      */
-    function startSession(address _deviceAddress) external payable nonReentrant returns (bytes32 sessionId) {
-        require(deviceRegistry.isDeviceActive(_deviceAddress), "Device is not active or not found"); // Ensure the device exists and is active
+    function startSession(
+        address _deviceAddress
+    ) external payable nonReentrant returns (bytes32 sessionId) {
+        // Ensure the device exists and is active
+        require(
+            deviceRegistry.isDeviceActive(_deviceAddress),
+            "Device is not active or not found"
+        );
+        // Prevent multiple active sessions for the same device
+        require(
+            deviceActiveSession[_deviceAddress] == bytes32(0),
+            "Device already has an active session"
+        );
 
         // Fetch device info
         uint256 deviceFee = deviceRegistry.getDeviceFee(_deviceAddress);
-
         require(msg.value == deviceFee, "Incorrect fee sent");
-        require(deviceActiveSession[_deviceAddress] == bytes32(0),"Device already has an active session"); // Prevent multiple active sessions for the same device
 
         // Generate a unique session ID based on the user's address and timestamp.
         sessionId = keccak256(
@@ -137,65 +152,70 @@ contract UsageManager is Ownable, ReentrancyGuard {
      * @param sessionId The unique ID of the session to end.
      */
     function endSession(bytes32 sessionId) external nonReentrant {
-        Session storage s = sessions[sessionId]; // Fetch the session details
-        require(s.active, "Session not active or not found"); // Ensure the session is exists and is active
+        Session storage session = sessions[sessionId]; // Fetch the session details
+        require(session.active, "Session not active or not found"); // Ensure the session is exists and is active
 
-        address deviceOwner = deviceRegistry.getDeviceOwner(s.device); // Get the device owner from the registry
+        address deviceOwner = deviceRegistry.getDeviceOwner(session.device); // Get the device owner from the registry
         require(deviceOwner != address(0), "Invalid device owner address"); // Ensure the device owner address is valid
 
         // Authorization check: only device owner, contract owner, or session user can end the session
         bool isDeviceOwner = (msg.sender == deviceOwner);
         bool isContractOwner = (msg.sender == owner());
-        bool isSessionUser = (msg.sender == s.user);
+        bool isSessionUser = (msg.sender == session.user);
+        require(
+            isDeviceOwner || isContractOwner || isSessionUser,
+            "Not authorized to end session"
+        );
 
-        require(isDeviceOwner || isContractOwner || isSessionUser, "Not authorized to end session");
-
-        balances[deviceOwner] += s.fee; // Credit the device owner's (pull pattern)
-        s.active = false; // Mark the session as inactive
+        // Credit balance into device pool
+        deviceBalances[session.device] += session.fee;
+        session.active = false; // Mark the session as inactive
 
         // Clear the active session for the device
-        if (deviceActiveSession[s.device] == sessionId) {
-            deviceActiveSession[s.device] = bytes32(0);
+        if (deviceActiveSession[session.device] == sessionId) {
+            deviceActiveSession[session.device] = bytes32(0);
         }
 
         // Emit event to log the session end
-        emit SessionEnded(sessionId, deviceOwner, block.timestamp, s.fee);
+        emit SessionEnded(sessionId, deviceOwner, block.timestamp, session.fee);
     }
 
+    // ----- Withdrawal functions -----
     /**
      * @dev Allows device owners to withdraw their accumulated earnings.
      * This uses a "pull instead of push" pattern for security. Users "pull" their funds rather than the contract "pushing" them, helps with re-entrancy attacks.
      */
     function withdraw(address _deviceAddress) external nonReentrant {
+        require(
+            deviceRegistry.getDeviceOwner(_deviceAddress) == msg.sender,
+            "Not device owner"
+        );
 
-        require(deviceRegistry.getDeviceOwner(_deviceAddress) == msg.sender, "Not device owner");
+        uint256 amount = deviceBalances[_deviceAddress]; // Get the amount of token in device
+        require(amount > 0, "No balance to withdraw"); // Ensure that device has a positive balance to withdraw
 
-        uint256 amount = balances[msg.sender]; // Get the caller's balance
-        require(amount > 0, "No balance to withdraw"); // Ensure that user has positive balance to withdraw
-
-        balances[msg.sender] = 0; // Reset the balance to 0
+        deviceBalances[_deviceAddress] = 0; // Reset the balance the device hold to 0
 
         // Transfer the fee
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Withdrawal failed");
 
         // Emit event to log successful withdrawal
-        emit Withdrawal(msg.sender, amount);
+        emit Withdraw(_deviceAddress, msg.sender, amount);
     }
 
+    // ------ Get Functions ------
     /**
-     * @dev Gets the accumulated balance for a specific address.
-     * @param _deviceOwner The address to query.
-     * @return The current balance.
+     * @dev Function to get Balance of a device
      */
-    function getBalance(address _deviceOwner) external view returns (uint256) {
-        return balances[_deviceOwner];
+    function getDeviceBalance(
+        address _deviceAddress
+    ) external view returns (uint256) {
+        return deviceBalances[_deviceAddress];
     }
 
     /**
-     * @dev Gets the details of a specific session.
-     * @param sessionId The unique ID of the session to query.
-     * @return The session details.
+     * @dev Function to get a specific session
      */
     function getSession(
         bytes32 sessionId
@@ -204,11 +224,11 @@ contract UsageManager is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Gets the active session ID for a specific device.
-     * @param device The address of the device to query.
-     * @return The active session ID, or bytes32(0) if no active session.
+     * @dev Function the session state of a device
      */
-    function activeSessionOfDevice(address device) external view returns (bytes32) {
+    function activeSessionOfDevice(
+        address device
+    ) external view returns (bytes32) {
         return deviceActiveSession[device];
     }
 
