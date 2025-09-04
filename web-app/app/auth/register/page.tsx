@@ -46,6 +46,7 @@ export default function RegisterPage() {
 
       <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-100 p-8 rounded-2xl shadow-xl ">
         <form onSubmit={handleRegister} className="space-y-5">
+          
           <div>
             <label htmlFor="username" className="block text-sm/6 font-medium">
               Username

@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/app/lib/supabaseClient";
 import { supabaseService } from "@/app/lib/supabaseService";
-import { setCookie } from "cookies-next";
 
 export default async function handler(
   req: NextApiRequest,
@@ -30,19 +29,16 @@ export default async function handler(
     password,
   });
   if (error) return res.status(400).json({ error: error.message });
-  if (!data.session) return res.status(400).json({ error: "No session created" });
+  if (!data.session)
+    return res.status(400).json({ error: "No session created" });
 
-  // Store session in Cookie
-  setCookie("sb-access-token", data.session.access_token, {
-    req,
-    res,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 , // 1hour
-    path: "/",
-  });
+  // Set cookie
+  res.setHeader(
+    "Set-Cookie",
+    `sb-access-token=${
+      data.session.access_token
+    }; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${60 * 60}`
+  );
 
-
-  return res.status(200).json({ message: "Login successful", user: data.user, session: data.session });
+  return res.status(200).json({ message: "Login successful"});
 }
