@@ -1,3 +1,7 @@
+/**
+ * This class is to access the database using service key role. (Bypass RLS policy) 
+ */
+
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

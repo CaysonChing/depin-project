@@ -21,9 +21,7 @@ export default function LoginPage() {
       setMsg("Login Successful");
 
       //Redirect to dashboard
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
+      window.location.href = "/dashboard";
     } else {
       setMsg(data.error || "Login failed");
     }
@@ -76,7 +74,12 @@ export default function LoginPage() {
             </button>
           </div>
           <div className="text-center font-normal">
-            <p>Don&apos;t have an account? <a href="/auth/register" className="font-semibold" >Register now</a> </p>
+            <p>
+              Don&apos;t have an account?{" "}
+              <a href="/auth/register" className="font-semibold">
+                Register now
+              </a>{" "}
+            </p>
           </div>
         </form>
       </div>
