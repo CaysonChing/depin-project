@@ -1,6 +1,4 @@
 import Navbar from "@/components/Navbar";
-import { cookies } from "next/headers";
-import { supabase } from "@/app/lib/supabaseClient";
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
 import "../globals.css";
 

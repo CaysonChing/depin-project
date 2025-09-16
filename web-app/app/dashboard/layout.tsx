@@ -1,6 +1,4 @@
 import Navbar from "@/components/Navbar";
-import { cookies } from "next/headers";
-import { supabase } from "@/app/lib/supabaseClient";
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
 import "../globals.css";
 
@@ -25,7 +23,6 @@ export default async function DashboardLayout({
     )
   }
 
-
   const { data: profile, error: profileError } = await (await supabaseServer)
     .from("users")
     .select("*")
@@ -38,7 +35,6 @@ export default async function DashboardLayout({
       </div>
     );
   }
-
 
   return (
     <div className="flex h-screen overflow-hidden">
