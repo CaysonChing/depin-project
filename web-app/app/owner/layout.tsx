@@ -25,7 +25,6 @@ export default async function DashboardLayout({
     )
   }
 
-
   const { data: profile, error: profileError } = await (await supabaseServer)
     .from("users")
     .select("*")
@@ -38,7 +37,6 @@ export default async function DashboardLayout({
       </div>
     );
   }
-
 
   return (
     <div className="flex h-screen overflow-hidden">

@@ -1,5 +1,4 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
-import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
   const supabaseServer = await getSupabaseServerClient();
@@ -13,12 +12,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <DashboardClient walletAddress={profile.wallet_address}>
       <div className="p-6">
         <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
         <p>Your dashboard content goes here...</p>
         {/* All other dashboard components */}
       </div>
-    </DashboardClient>
+
   );
 }

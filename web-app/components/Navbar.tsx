@@ -1,16 +1,29 @@
 // components/Sidebar.tsx
-export default function Sidebar() {
+interface SidebarProps{
+  isOwner: boolean;
+}
+
+export default function Sidebar({ isOwner }: SidebarProps) {
   return (
-    <div className="h-screen w-56 bg-gray-900 text-white flex flex-col justify-between">
+    <div className="h-screen w-68 bg-gray-900 text-white flex flex-col justify-between">
 
       <div className="flex flex-col">
         <div className="flex items-center justify-center h-16 border-b border-gray-700">
           <span className="text-xl font-bold">DePIN App</span>
         </div>
+
         <nav className="flex flex-col mt-4 space-y-2">
-          <SidebarItem label="Home" href="/dashboard" />
-          <SidebarItem label="My Devices" href="#" />
-          <SidebarItem label="Profile" href="#" />
+          {isOwner ? (
+            <>
+              <SidebarItem label="Home" href="/owner/dashboard" />
+              <SidebarItem label="Contract Owner Settings" href="#" />
+            </>
+          ) : (
+            <>
+              <SidebarItem label="Home" href="/dashboard" />
+              <SidebarItem label="My Devices" href="#" />
+            </>
+          )}
         </nav>
       </div>
 

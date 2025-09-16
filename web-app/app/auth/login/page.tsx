@@ -20,8 +20,12 @@ export default function LoginPage() {
     if (res.ok) {
       setMsg("Login Successful");
 
-      //Redirect to dashboard
-      window.location.href = "/dashboard";
+      if (data.is_contract_owner){
+        window.location.href = "/owner/dashboard";
+      }else{
+        window.location.href = "/dashboard";
+      }
+
     } else {
       setMsg(data.error || "Login failed");
     }

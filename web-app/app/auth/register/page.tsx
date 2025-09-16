@@ -27,10 +27,8 @@ export default function RegisterPage() {
     if (res.ok) {
       setMsg("Registration successful.");
 
-      //Redirect to login page after a short delay
-      setTimeout(() => {
-        window.location.href = "/auth/login";
-      }, 2000);
+      //Redirect to login page 
+      window.location.href = "/auth/login";
     } else {
       setMsg(data.error);
     }
@@ -46,7 +44,6 @@ export default function RegisterPage() {
 
       <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-100 p-8 rounded-2xl shadow-xl ">
         <form onSubmit={handleRegister} className="space-y-5">
-          
           <div>
             <label htmlFor="username" className="block text-sm/6 font-medium">
               Username
@@ -95,7 +92,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="wallet_address" className="block text-sm/6 font-medium">
+            <label
+              htmlFor="wallet_address"
+              className="block text-sm/6 font-medium"
+            >
               Wallet Address
             </label>
 
@@ -110,7 +110,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="mt-6">
-            <button type="submit" className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 text-white">Register</button>
+            <button
+              type="submit"
+              className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 text-white"
+            >
+              Register
+            </button>
           </div>
         </form>
       </div>

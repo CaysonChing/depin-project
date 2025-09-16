@@ -21,7 +21,7 @@ export default async function handler(
     .single();
 
   if (userError || !users?.email)
-    return res.status(400).json({ error: "User not found or email missing" });
+    return res.status(400).json({ error: "Wrong username or password" });
 
   // Authenticate with Supabase
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -40,5 +40,5 @@ export default async function handler(
     }; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${60 * 60}`
   );
 
-  return res.status(200).json({ message: "Login successful"});
+  return res.status(200).json({ message: "Login successful", is_contract_owner: users.is_contract_owner});
 }
