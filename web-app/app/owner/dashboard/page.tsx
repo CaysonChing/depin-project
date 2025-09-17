@@ -1,7 +1,6 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
 import ConnectWallet from "@/components/wallet/ConnectWallet";
 import WalletCheck from "@/components/wallet/WalletCheck";
-import WalletInfo from "@/components/wallet/WalletInfo";
 
 export default async function DashboardPage() {
   const supabaseServer = await getSupabaseServerClient();

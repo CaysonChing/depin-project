@@ -77,7 +77,7 @@ export default function ContractManager({ isOwner }: { isOwner: boolean }) {
       </div>
 
       {isOwner ? (
-        <div className=" border-white p-8 rounded-xl shadow-xl">
+        <div className=" border-white p-8 rounded-xl shadow-xl justify-center">
           <label className="">Set new Reward</label>
           <div className="flex gap-2">
             <input

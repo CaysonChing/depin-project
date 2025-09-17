@@ -1,7 +1,8 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
 import ConnectWallet from "@/components/wallet/ConnectWallet";
 import WalletCheck from "@/components/wallet/WalletCheck";
-import WalletInfo from "@/components/wallet/WalletInfo";
+import DeviceList from "@/components/device/DeviceList";
+import RegisterDeviceBtn from "@/components/device/RegisterDeviceBtn";
 
 export default async function DashboardPage() {
   const supabaseServer = await getSupabaseServerClient();
@@ -14,21 +15,33 @@ export default async function DashboardPage() {
     return <p>Could not load profile.</p>;
   }
 
+  const { data: devices, error: devicesError } = await supabaseServer
+    .from("devices")
+    .select("*");
+
+  if (devicesError) {
+    console.error(devicesError);
+    return <p>Could not load devices.</p>;
+  }
+
   return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
-        
-        <div className="mb-4"><WalletInfo /></div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
+
+      <div className="mt-3">
         <ConnectWallet />
-
-        <WalletCheck expectedWallet={profile.wallet_address}>
-
-          <div className="mt-80">
-            Wallet checked passed. display content
-          </div>
-
-        </WalletCheck>
-        
       </div>
+
+      <WalletCheck expectedWallet={profile.wallet_address}>
+        
+        <div className="mt-6">
+          <RegisterDeviceBtn />
+        </div>
+
+        <div className="mt-2 p-2">
+          <DeviceList devices={devices || []} />
+        </div>
+      </WalletCheck>
+    </div>
   );
 }

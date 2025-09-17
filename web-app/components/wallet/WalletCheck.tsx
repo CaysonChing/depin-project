@@ -15,7 +15,7 @@ export default function WalletCheck({
 
   if (address?.toLowerCase() !== expectedWallet.toLowerCase()) {
     return (
-      <div className="mt-4" style={{ color: "red" }}>
+      <div className="mt-4 text-red">
         Connected wallet does not match your registered wallet.
         <br />
         Please switch to: <strong>{expectedWallet}</strong>
@@ -25,3 +25,5 @@ export default function WalletCheck({
 
   return <>{children}</>;
 }
+
+
