@@ -8,7 +8,7 @@ export default function WalletInfo(){
     if (!isConnected) return null;
 
     return(
-        <div className="mt-4">
+        <div>
             <strong>Connected address:</strong>
             <div>{address}</div>
         </div>

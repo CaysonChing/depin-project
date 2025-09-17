@@ -1,4 +1,7 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
+import ConnectWallet from "@/components/wallet/ConnectWallet";
+import WalletCheck from "@/components/wallet/WalletCheck";
+import WalletInfo from "@/components/wallet/WalletInfo";
 
 export default async function DashboardPage() {
   const supabaseServer = await getSupabaseServerClient();
@@ -12,11 +15,18 @@ export default async function DashboardPage() {
   }
 
   return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
-        <p>Your admin dashboard content goes here...</p>
-        {/* All other dashboard components */}
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Welcome, {profile.username}</h1>
+
+      <div className="mt-3">
+        <ConnectWallet />
       </div>
 
+      <WalletCheck expectedWallet={profile.wallet_address}>
+        <div style={{ marginTop: 20 }}>
+          Wallet checked passed. display content
+        </div>
+      </WalletCheck>
+    </div>
   );
 }

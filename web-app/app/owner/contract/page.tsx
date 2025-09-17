@@ -1,4 +1,7 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
+import ContractManager from "@/components/contract/ContractManager";
+import ConnectWallet from "@/components/wallet/ConnectWallet";
+
 
 export default async function DashboardPage() {
   const supabaseServer = await getSupabaseServerClient();
@@ -12,8 +15,16 @@ export default async function DashboardPage() {
   }
 
   return (
-      <div className="p-6">
-        <h1>Contract settings here</h1>
+      <div className="ps-50 p-20 justify-center">
+        <h1 className="text-2xl font-bold mb-4">Manage Contract</h1>
+
+        <ConnectWallet />
+
+        <div className="flex mt-6">
+
+          <ContractManager isOwner={profile.is_contract_owner} />
+
+        </div>
       </div>
 
   );
