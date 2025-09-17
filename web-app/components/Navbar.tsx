@@ -16,7 +16,7 @@ export default function Sidebar({ isOwner }: SidebarProps) {
           {isOwner ? (
             <>
               <SidebarItem label="Home" href="/owner/dashboard" />
-              <SidebarItem label="Contract Owner Settings" href="#" />
+              <SidebarItem label="Contract Settings" href="/owner/contract" />
             </>
           ) : (
             <>

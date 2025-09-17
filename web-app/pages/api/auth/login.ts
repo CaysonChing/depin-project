@@ -24,7 +24,7 @@ export default async function handler(
     return res.status(400).json({ error: "Wrong username or password" });
 
   // Authenticate with Supabase
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabaseService.auth.signInWithPassword({
     email: users.email,
     password,
   });

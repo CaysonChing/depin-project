@@ -7,20 +7,21 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   let supabaseServer;
 
-  try{
+  try {
     supabaseServer = await getSupabaseServerClient();
   } catch {
-    return(
+    return (
       <div className="flex min-h-screen items-center justify-center">
         <p>
           You are not logged in.{" "}
-          <a href="/auth/login" className="text-blue-500">Go to login</a>
+          <a href="/auth/login" className="text-blue-500">
+            Go to login
+          </a>
         </p>
       </div>
-    )
+    );
   }
 
   const { data: profile, error: profileError } = await (await supabaseServer)
@@ -40,7 +41,8 @@ export default async function DashboardLayout({
     <div className="flex h-screen overflow-hidden">
       <Navbar isOwner={profile.is_contract_owner} />
 
-      <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p-6">{children}</main>
+
     </div>
   );
 }
