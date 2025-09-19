@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther } from "viem";
+import abiJson from "@/app/abi/DeviceSharing.json";
+
+const contractAddress = process.env
+  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
 export default function RegisterDeviceForm({ owner_id }: { owner_id: string }) {
   const [device_id, setDeviceId] = useState("");
@@ -12,32 +18,97 @@ export default function RegisterDeviceForm({ owner_id }: { owner_id: string }) {
   const [msg, setMsg] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const res = await fetch("/api/device/registerDevice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        device_id,
-        owner_id,
-        name,
-        type,
-        description,
-        fee
-      }),
+  // Define write functions
+  const { writeContract: writeRegister, data: txHashRegister } =
+    useWriteContract();
+  const { isLoading: txSubmitting, isSuccess: txSuccess } =
+    useWaitForTransactionReceipt({
+      hash: txHashRegister,
     });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      setMsg("Device Registered Successfully");
+  useEffect(() => {
+    if (txSuccess) {
       router.push("/dashboard");
-      
-    } else {
-      setMsg(data.error);
+    }
+  }, [txSuccess, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg("");
+
+    let db_success = false;
+
+    try {
+      const res = await fetch("/api/device/registerDevice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          device_id,
+          owner_id,
+          name,
+          type,
+          description,
+          fee,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMsg(data.error || "Failed to save to database");
+        return;
+      }
+
+      db_success = true;
+    } catch (err) {
+      setMsg("Database request failed");
+      return;
+    }
+
+    try {
+      const feePerDay = parseEther(fee || "0");
+
+      writeRegister({
+        address: contractAddress,
+        abi: abiJson.abi,
+        functionName: "registerDevice",
+        args: [device_id, feePerDay],
+      });
+    } catch (err: unknown) {
+      if(err instanceof Error){
+        setMsg(err.message);
+      }else{
+        setMsg("On-chain write failed. Database saved successfully");
+      }
     }
   };
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   const res = await fetch("/api/device/registerDevice", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({
+  //       device_id,
+  //       owner_id,
+  //       name,
+  //       type,
+  //       description,
+  //       fee
+  //     }),
+  //   });
+
+  //   const data = await res.json();
+
+  //   if (res.ok) {
+  //     setMsg("Device Registered Successfully");
+  //     router.push("/dashboard");
+
+  //   } else {
+  //     setMsg(data.error);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col px-7 pb-12 border">
@@ -131,9 +202,10 @@ export default function RegisterDeviceForm({ owner_id }: { owner_id: string }) {
           <div className="mt-4">
             <button
               type="submit"
+              disabled={txSubmitting}
               className="bg-blue-600 text-white px-8 py-2 rounded-xl mt-2 font-semibold"
             >
-              Submit
+              {txSubmitting ? "Submitting..." : "Submit"}
             </button>
           </div>
         </form>

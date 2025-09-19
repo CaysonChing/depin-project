@@ -19,7 +19,6 @@ export default async function DashboardPage() {
   .from("devices")
   .select("*");
 
-
   if (devicesError) {
     console.error(devicesError);
     return <p>Could not load devices.</p>;
@@ -39,7 +38,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-2 p-2">
-          <DeviceList devices={devices || []} />
+          <DeviceList devices={devices || []} user_id={profile.id} />
         </div>
       </WalletCheck>
     </div>

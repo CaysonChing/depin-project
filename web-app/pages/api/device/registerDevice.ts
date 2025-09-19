@@ -20,7 +20,7 @@ export default async function handler(
       name,
       type,
       description,
-      fee,
+      fee: Number(fee),
     },
   ]);
 
