@@ -16,12 +16,11 @@ export default function Sidebar({ isOwner }: SidebarProps) {
           {isOwner ? (
             <>
               <SidebarItem label="Home" href="/owner/dashboard" />
-              <SidebarItem label="Contract Settings" href="/owner/contract" />
             </>
           ) : (
             <>
               <SidebarItem label="Home" href="/dashboard" />
-              <SidebarItem label="My Devices" href="#" />
+              <SidebarItem label="My Devices" href="/device/myDevices" />
             </>
           )}
         </nav>

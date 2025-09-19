@@ -1,5 +1,4 @@
 import { getSupabaseServerClient } from "@/app/lib/supabaseServer";
-import ConnectWallet from "@/components/wallet/ConnectWallet";
 import WalletCheck from "@/components/wallet/WalletCheck";
 import DeviceList from "@/components/device/DeviceList";
 import RegisterDeviceBtn from "@/components/device/RegisterDeviceBtn";
@@ -16,9 +15,9 @@ export default async function DashboardPage() {
   }
 
   const { data: devices, error: devicesError } = await supabaseServer
-  .from("devices")
-  .select("*");
-
+    .from("devices")
+    .select("*")
+    .eq("owner_id", profile.id);
 
   if (devicesError) {
     console.error(devicesError);
@@ -27,11 +26,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
-
-      <div className="mt-3">
-        <ConnectWallet />
-      </div>
+      <h1 className="text-2xl font-bold">{profile.username} &apos;s Devices</h1>
 
       <WalletCheck expectedWallet={profile.wallet_address}>
         <div className="mt-6">

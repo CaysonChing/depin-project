@@ -2,6 +2,7 @@
 
 type Device = {
   device_id: string;
+  owner_id: string;
   name: string;
   type: string;
   description: string;
@@ -28,13 +29,20 @@ export default function DeviceList({ devices }: { devices: Device[] }) {
               {device.device_id}
             </p>
 
-            <p
-              className={`font-semibold ${
-                device.status ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              <span className="font-semibold text-black">Status:</span>{" "}
-              {device.status ? "Active" : "Inactive"}
+            <p>
+              <span className="font-semibold">Owner :</span>{" "}
+              {device.owner_id}
+            </p>
+
+            <p className="font-semibold">
+              Status: {" "}
+              <span
+                className={`font-semibold ${
+                  device.status ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {device.status ? "Active" : "Inactive"}
+              </span>
             </p>
 
             <p>
@@ -44,7 +52,7 @@ export default function DeviceList({ devices }: { devices: Device[] }) {
 
             <div className="mt-auto pt-4">
               <button className="p-1 border rounded-2xl w-full hover:shadow-2xl hover:border-2">
-                Use
+                Subscribe
               </button>
             </div>
           </div>

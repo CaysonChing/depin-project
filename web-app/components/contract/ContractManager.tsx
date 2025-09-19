@@ -58,14 +58,14 @@ export default function ContractManager({ isOwner }: { isOwner: boolean }) {
   return (
     <div>
       <div className="grid grid-cols-2 mb-5">
-        <div className="p-2 px-6 rounded-2xl shadow-2xl font-semibold">
+        <div className="p-2 px-6 rounded-2xl shadow-2xl font-semibold border">
           <p>
             Contract Balance:{" "}
             {balance ? `${balance.formatted} ${balance.symbol}` : "Loading..."}
           </p>
         </div>
 
-        <div className="p-2 px-6 rounded-2xl me-4 shadow-2xl font-semibold">
+        <div className="p-2 px-6 rounded-2xl me-4 shadow-2xl font-semibold border ms-4">
           <p>
             Current Reward:{" "}
             {typeof reward === "bigint"
@@ -77,7 +77,7 @@ export default function ContractManager({ isOwner }: { isOwner: boolean }) {
       </div>
 
       {isOwner ? (
-        <div className=" border-white p-8 rounded-xl shadow-xl justify-center">
+        <div className=" border-white px-8 pb-8 pt-4 rounded-xl shadow-xl justify-center">
           <label className="">Set new Reward</label>
           <div className="flex gap-2">
             <input
