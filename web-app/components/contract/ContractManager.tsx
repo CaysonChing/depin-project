@@ -8,7 +8,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { parseEther, formatEther } from "viem";
-import abiJson from "@/app/abi/DeviceUsageManager.json";
+import abiJson from "@/app/abi/DeviceSharing.json";
 
 const contractAddress = process.env
   .NEXT_PUBLIC_CONTRACT_ADDRESS! as `0x${string}`;

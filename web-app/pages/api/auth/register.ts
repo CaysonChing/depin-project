@@ -7,11 +7,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
 
-  // Check if request is POST method
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  // Get inputs from form (add email later)
   const { username, password, email, wallet_address } = req.body;
   if (!username || !password || !wallet_address)
     return res.status(400).json({ error: "Username, password, email, and wallet_address are required" });
