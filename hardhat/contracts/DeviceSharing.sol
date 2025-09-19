@@ -338,10 +338,10 @@ contract DeviceSharing is Ownable, ReentrancyGuard {
             sub.status == SubscriptionStatus.Active,
             "Subscription is not active"
         );
-        // require(
-        //     block.timestamp > sub.endTime,
-        //     "Subscription period not ended yet"
-        // );
+        require(
+            block.timestamp > sub.endTime,
+            "Subscription period not ended yet"
+        );
 
         bytes32 device_id = sub.deviceId;
 
