@@ -75,9 +75,9 @@ export default function RegisterDeviceForm({ owner_id }: { owner_id: string }) {
         args: [device_id, feePerDay],
       });
     } catch (err: unknown) {
-      if(err instanceof Error){
+      if (err instanceof Error) {
         setMsg(err.message);
-      }else{
+      } else {
         setMsg("On-chain write failed. Database saved successfully");
       }
     }

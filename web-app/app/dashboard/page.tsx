@@ -24,6 +24,16 @@ export default async function DashboardPage() {
     return <p>Could not load devices.</p>;
   }
 
+  const {data: subscriptions, error: subsError } = await supabaseServer
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", profile.id)
+    .eq("status", 0);
+
+  if(subsError){
+    console.log("Error retrieving subscriptions");
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">Welcome, {profile.username}</h1>
@@ -38,7 +48,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-2 p-2">
-          <DeviceList devices={devices || []} user_id={profile.id} />
+          <DeviceList devices={devices || []} user_id={profile.id} subscriptions={subscriptions || []} />
         </div>
       </WalletCheck>
     </div>
