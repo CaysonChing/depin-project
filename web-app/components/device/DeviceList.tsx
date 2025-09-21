@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Countdown } from "../subscription/Countdown";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther } from "viem";
+import abiJson from "@/app/abi/DeviceSharing.json";
+import { useEffect, useState } from "react";
+
+const contractAddress = process.env
+  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
 type Device = {
   device_id: string;
@@ -33,6 +39,22 @@ export default function DeviceList({
   user_id: string;
   subscriptions?: Subscription[];
 }) {
+  const [msg, setMsg] = useState("");
+
+  const { writeContract: writeSubscribe, data: txHashSubscribe } =
+    useWriteContract();
+
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash: txHashSubscribe,
+  });
+
+  useEffect(() => {
+    if (isSuccess) {
+      // reload to update subscription info
+      window.location.reload();
+    }
+  }, [isSuccess]);
+
   if (!devices || devices.length === 0) {
     return <p>No devices found.</p>;
   }
@@ -49,11 +71,15 @@ export default function DeviceList({
     );
   }
 
-  async function handleSubscribe(
+  const handleSubscribe = async (
     deviceId: string,
     fee: string,
     duration: number
-  ) {
+  ) => {
+    setMsg("");
+
+    let db_success = false;
+
     try {
       const res = await fetch("/api/subscription/subscribe", {
         method: "POST",
@@ -69,26 +95,78 @@ export default function DeviceList({
       const data = await res.json();
 
       if (!res.ok) {
-        console.error("Subscribe API error:", data);
-        alert(data.error || "Failed to subscribe");
+        setMsg(data.error || "Failed to save subscription to database");
         return;
       }
 
-      console.log("Subscription created:", data.subscription);
-      alert("Subscription successful!");
-      window.location.reload();
-      
+      db_success = true;
     } catch (err) {
-      console.error("Fetch failed:", err);
-      alert("Subscription failed. Check console for details.");
+      setMsg("Database request failed");
+      return;
     }
-  }
 
-  console.log("Subscriptions for user:", subscriptions);
-  console.log(
-    "Checking device:",
-    devices.map((d) => d.device_id)
-  );
+    try {
+      let durationDays = 1;
+      if (duration === 1) durationDays = 7;
+      if (duration === 2) durationDays = 30;
+
+      const feePerDay = parseEther(String(fee));
+      const totalFee = feePerDay * BigInt(durationDays);
+
+      writeSubscribe({
+        address: contractAddress,
+        abi: abiJson.abi,
+        functionName: "subscribe",
+        args: [deviceId, duration],
+        value: totalFee,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        setMsg(err.message);
+      } else {
+        setMsg(
+          db_success
+            ? "On-chain write failed. Database saved successfully"
+            : "Subscription failed"
+        );
+      }
+    }
+  };
+
+  // async function handleSubscribe(
+  //   deviceId: string,
+  //   fee: string,
+  //   duration: number
+  // ) {
+  //   try {
+  //     const res = await fetch("/api/subscription/subscribe", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         user_id,
+  //         device_id: deviceId,
+  //         feePerDay: fee,
+  //         duration,
+  //       }),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (!res.ok) {
+  //       console.error("Subscribe API error:", data);
+  //       alert(data.error || "Failed to subscribe");
+  //       return;
+  //     }
+
+  //     console.log("Subscription created:", data.subscription);
+  //     alert("Subscription successful!");
+  //     window.location.reload();
+
+  //   } catch (err) {
+  //     console.error("Fetch failed:", err);
+  //     alert("Subscription failed. Check console for details.");
+  //   }
+  // }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
@@ -141,6 +219,7 @@ export default function DeviceList({
                 <p className="font-semibold mt-4">Subscription:</p>
                 <div className="mt-2 flex justify-between">
                   <button
+                    disabled={isLoading}
                     onClick={() =>
                       handleSubscribe(device.device_id, device.fee, 0)
                     }
@@ -149,6 +228,7 @@ export default function DeviceList({
                     1 Day
                   </button>
                   <button
+                    disabled={isLoading}
                     onClick={() =>
                       handleSubscribe(device.device_id, device.fee, 1)
                     }
@@ -157,6 +237,7 @@ export default function DeviceList({
                     1 Week
                   </button>
                   <button
+                    disabled={isLoading}
                     onClick={() =>
                       handleSubscribe(device.device_id, device.fee, 2)
                     }
@@ -170,6 +251,9 @@ export default function DeviceList({
           </div>
         );
       })}
+      {msg && (
+        <div className="col-span-full text-center text-red-500 mt-4">{msg}</div>
+      )}
     </div>
   );
 }
