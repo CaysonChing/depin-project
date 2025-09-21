@@ -9,6 +9,12 @@ import { useEffect, useState } from "react";
 const contractAddress = process.env
   .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
+  type User = {
+    id: string;
+    username: string;
+    wallet_address: string;
+  };
+
 type Device = {
   device_id: string;
   owner_id: string;
@@ -32,11 +38,11 @@ type Subscription = {
 
 export default function DeviceList({
   devices,
-  user_id,
+  user,
   subscriptions = [],
 }: {
   devices: Device[];
-  user_id: string;
+  user: User;
   subscriptions?: Subscription[];
 }) {
   const [msg, setMsg] = useState("");
@@ -59,18 +65,6 @@ export default function DeviceList({
     return <p>No devices found.</p>;
   }
 
-  function getActiveSubscription(deviceId: string) {
-    const now = new Date();
-    return subscriptions.find(
-      (sub) =>
-        sub.device_id === deviceId &&
-        sub.user_id === user_id &&
-        new Date(sub.start_time) <= now &&
-        new Date(sub.end_time) >= now &&
-        sub.status === 0
-    );
-  }
-
   const handleSubscribe = async (
     deviceId: string,
     fee: string,
@@ -85,7 +79,7 @@ export default function DeviceList({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id,
+          user_id: user.id,
           device_id: deviceId,
           feePerDay: fee,
           duration,
@@ -130,43 +124,21 @@ export default function DeviceList({
             : "Subscription failed"
         );
       }
-    }
+    };
   };
 
-  // async function handleSubscribe(
-  //   deviceId: string,
-  //   fee: string,
-  //   duration: number
-  // ) {
-  //   try {
-  //     const res = await fetch("/api/subscription/subscribe", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         user_id,
-  //         device_id: deviceId,
-  //         feePerDay: fee,
-  //         duration,
-  //       }),
-  //     });
+    function getActiveSubscription(deviceId: string) {
+    const now = new Date();
+    return subscriptions.find(
+      (sub) =>
+        sub.device_id === deviceId &&
+        sub.user_id === user.id &&
+        new Date(sub.start_time) <= now &&
+        new Date(sub.end_time) >= now
+    );
+  }
 
-  //     const data = await res.json();
-
-  //     if (!res.ok) {
-  //       console.error("Subscribe API error:", data);
-  //       alert(data.error || "Failed to subscribe");
-  //       return;
-  //     }
-
-  //     console.log("Subscription created:", data.subscription);
-  //     alert("Subscription successful!");
-  //     window.location.reload();
-
-  //   } catch (err) {
-  //     console.error("Fetch failed:", err);
-  //     alert("Subscription failed. Check console for details.");
-  //   }
-  // }
+  console.log("User id:" , user.id)
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
@@ -208,7 +180,7 @@ export default function DeviceList({
               <div className="flex flex-col gap-2 mt-4">
                 <p>
                   <span className="font-semibold">Subscription ends in:</span>{" "}
-                  <Countdown endTime={activeSub.end_time} />
+                  <Countdown endTime={activeSub.end_time} subscriptionId={activeSub.id} />
                 </p>
                 <button className="p-2 px-10 border rounded-2xl hover:shadow-2xl hover:border-2 hover:bg-gray-400">
                   View Device Data

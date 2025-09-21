@@ -48,7 +48,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-2 p-2">
-          <DeviceList devices={devices || []} user_id={profile.id} subscriptions={subscriptions || []} />
+          <DeviceList devices={devices || []} user={profile} subscriptions={subscriptions || []} />
         </div>
       </WalletCheck>
     </div>
