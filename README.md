@@ -12,7 +12,7 @@ Blockchain & Smart Contracts (/hardhat)
 **OpenZeppelin**: Secure standard libraries for access control and tokenized incentives.  
 **JavaScript/Ethers.js**: Scripting for automated deployments and contract testing.  
   
-**Frontend Application (/web-app)**  (Next.js)
+**Frontend Application (/web-app)**  (Next.js)  
 **TypeScript**: Ensures type-safety and robust code for complex blockchain interactions.  
 **React**: Component-based UI for building a responsive user dashboard.  
 **Wagmi & Viem**: Lightweight, performant hooks for Ethereum wallet connections and contract calls.  
